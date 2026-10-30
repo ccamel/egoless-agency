@@ -5,7 +5,7 @@ from pathlib import Path
 
 def roman(number):
     if number < 1:
-        raise ValueError("edition number must be positive")
+        raise ValueError("💀 edition number must be positive")
     result = []
     for value, symbol in (
         (1000, "m"),
@@ -30,7 +30,7 @@ def roman(number):
 def render(html, number):
     marker = "<!-- edition -->"
     if html.count(marker) != 1:
-        raise ValueError("expected exactly one edition marker")
+        raise ValueError("💀 expected exactly one edition marker")
     return html.replace(marker, f'<span class="edition">edition {roman(number)}</span>')
 
 

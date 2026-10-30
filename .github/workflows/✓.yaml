@@ -14,6 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  commits:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Lint commit messages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ "$BASE" =~ ^0+$ ]]; then
+            revision="$HEAD"
+          else
+            git cat-file -e "$BASE^{commit}" || git fetch origin "$BASE"
+            revision="$BASE..$HEAD"
+          fi
+          python3 .github/scripts/lint_commits.py "$revision"
+
   edition:
     runs-on: ubuntu-22.04
     steps:
