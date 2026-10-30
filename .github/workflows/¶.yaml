@@ -1,0 +1,117 @@
+name: ¶
+
+on:
+  workflow_dispatch:
+    inputs:
+      resume:
+        description: 'Resume an existing edition (e.g. edition-1)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Check out the selected main commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select and validate edition
+        id: edition
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TARGET_SHA: ${{ github.sha }}
+          RESUME: ${{ inputs.resume }}
+        run: |
+          set -euo pipefail
+          latest=$(git tag --list 'edition-*' | jq -Rn '[inputs | select(test("^edition-[1-9][0-9]*$")) | ltrimstr("edition-") | tonumber] | max // 0')
+          if [[ -n "$RESUME" ]]; then
+            [[ "$RESUME" =~ ^edition-[1-9][0-9]*$ ]] || { echo 'Invalid edition tag' >&2; exit 1; }
+            [[ "$RESUME" == "edition-$latest" ]] || { echo 'Only the latest edition can be resumed' >&2; exit 1; }
+            tag=$RESUME
+            sha=$(git rev-parse "refs/tags/$tag^{commit}")
+          else
+            sha=$TARGET_SHA
+            if (( latest > 0 )); then
+              previous=$(git rev-parse "refs/tags/edition-$latest^{commit}")
+              git merge-base --is-ancestor "$previous" "$sha" || { echo 'Cannot publish an older commit' >&2; exit 1; }
+            fi
+            if (( latest > 0 )) && [[ "$sha" == "$previous" ]]; then
+              tag=edition-$latest
+            else
+              tag=edition-$((latest + 1))
+            fi
+          fi
+
+          workflow=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/workflows?per_page=100" \
+            --jq '[.[].workflows[] | select(.path == ".github/workflows/✓.yaml") | .id] | first // empty')
+          [[ -n "$workflow" ]] || { echo 'Validation workflow not found' >&2; exit 1; }
+          conclusion=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/workflows/$workflow/runs?head_sha=$sha&event=push&per_page=100" \
+            --jq '[.[].workflow_runs[] | select(.head_branch == "main")] | sort_by(.id) | last | if .status == "completed" then .conclusion else .status end // empty')
+          [[ "$conclusion" == success ]] || { echo "Validation for $sha is not successful: $conclusion" >&2; exit 1; }
+
+          if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+            gh api --method POST "repos/$REPOSITORY/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha"
+          fi
+          {
+            echo "tag=$tag"
+            echo "sha=$sha"
+            echo "number=${tag#edition-}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out edition
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.edition.outputs.sha }}
+          persist-credentials: false
+
+      - name: Prepare site
+        id: site
+        env:
+          NUMBER: ${{ steps.edition.outputs.number }}
+        run: |
+          set -euo pipefail
+          mkdir _site
+          cp index.html style.css favicon.svg CNAME _site/
+          roman=$(python3 .github/scripts/edition.py "$NUMBER" _site/index.html)
+          echo "roman=$roman" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: _site
+
+      - name: Deploy Pages
+        id: deploy
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ steps.edition.outputs.tag }}
+          ROMAN: ${{ steps.site.outputs.roman }}
+        run: |
+          set -euo pipefail
+          existing=$(gh api --paginate --slurp "repos/$REPOSITORY/releases?per_page=100" \
+            --jq '[.[][] | select(.tag_name == env.TAG and .draft == false)] | length')
+          if (( existing == 0 )); then
+            gh release create "$TAG" --repo "$REPOSITORY" --verify-tag --title "edition $ROMAN" --notes "edition $ROMAN"
+          fi

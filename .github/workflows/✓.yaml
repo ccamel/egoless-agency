@@ -14,6 +14,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  edition:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Ruff
+        run: python3 -m pip install --user ruff==0.15.14
+
+      - name: Lint Python
+        run: |
+          python3 -m ruff check .github/scripts
+          python3 -m ruff format --check .github/scripts
+
+      - name: Test edition rendering
+        run: python3 -m unittest discover -s .github/scripts
+
   skills:
     runs-on: ubuntu-22.04
     steps:

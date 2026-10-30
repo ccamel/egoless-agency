@@ -29,6 +29,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
 .hero { padding-top: clamp(3rem, 7vw, 8rem); padding-bottom: clamp(5rem, 11vw, 12rem); }
 .eyebrow, .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .hero-meta { display: flex; justify-content: space-between; gap: 1rem; }
+.edition { text-transform: none; }
 h1, h2, h3, p { margin-top: 0; }
 h1, h2, h3, .footer-statement { font-weight: 900; letter-spacing: -0.065em; font-kerning: normal; text-wrap: balance; }
 h1 { margin: 0.65em 0 0.35em; font-size: clamp(3rem, 9vw, 10rem); line-height: 0.86; text-transform: uppercase; }
