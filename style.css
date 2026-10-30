@@ -24,6 +24,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
 .wordmark { font-size: 1rem; font-weight: 900; letter-spacing: -0.06em; text-decoration: none; }
 .masthead nav { display: flex; gap: clamp(1.5rem, 4vw, 5rem); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 .masthead nav a { text-decoration: none; }
+.masthead nav a span { display: inline-block; line-height: 0; }
 .masthead nav a:hover { text-decoration: underline; }
 
 .hero { padding-top: clamp(3rem, 7vw, 8rem); padding-bottom: clamp(5rem, 11vw, 12rem); }
