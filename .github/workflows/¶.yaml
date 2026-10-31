@@ -60,11 +60,11 @@ jobs:
             fi
           fi
 
-          workflow=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/workflows?per_page=100" \
-            --jq '[.[].workflows[] | select(.path == ".github/workflows/✓.yaml") | .id] | first // empty')
+          workflow=$(gh api --paginate "repos/$REPOSITORY/actions/workflows?per_page=100" |
+            jq -rs '[.[] | .workflows[] | select(.path == ".github/workflows/✓.yaml") | .id] | first // empty')
           [[ -n "$workflow" ]] || { echo 'Validation workflow not found' >&2; exit 1; }
-          conclusion=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/workflows/$workflow/runs?head_sha=$sha&event=push&per_page=100" \
-            --jq '[.[].workflow_runs[] | select(.head_branch == "main")] | sort_by(.id) | last | if .status == "completed" then .conclusion else .status end // empty')
+          conclusion=$(gh api --paginate "repos/$REPOSITORY/actions/workflows/$workflow/runs?head_sha=$sha&event=push&per_page=100" |
+            jq -rs '[.[] | .workflow_runs[] | select(.head_branch == "main")] | sort_by(.id) | last | if .status == "completed" then .conclusion else .status end // empty')
           [[ "$conclusion" == success ]] || { echo "Validation for $sha is not successful: $conclusion" >&2; exit 1; }
 
           if ! git show-ref --verify --quiet "refs/tags/$tag"; then
@@ -110,8 +110,8 @@ jobs:
           ROMAN: ${{ steps.site.outputs.roman }}
         run: |
           set -euo pipefail
-          existing=$(gh api --paginate --slurp "repos/$REPOSITORY/releases?per_page=100" \
-            --jq '[.[][] | select(.tag_name == env.TAG and .draft == false)] | length')
+          existing=$(gh api --paginate "repos/$REPOSITORY/releases?per_page=100" |
+            jq -s '[.[][] | select(.tag_name == env.TAG and .draft == false)] | length')
           if (( existing == 0 )); then
             gh release create "$TAG" --repo "$REPOSITORY" --verify-tag --title "edition $ROMAN" --notes "edition $ROMAN"
           fi
