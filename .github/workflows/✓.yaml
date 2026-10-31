@@ -55,6 +55,17 @@ jobs:
       - name: Test edition rendering
         run: python3 -m unittest discover -s .github/scripts
 
+  svg:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate SVG XML
+        run: python3 -c 'from pathlib import Path; from xml.etree import ElementTree; [ElementTree.parse(p) for p in Path(".").rglob("*.svg")]'
+
   skills:
     runs-on: ubuntu-22.04
     steps:
