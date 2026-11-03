@@ -131,3 +131,57 @@ jobs:
           fi
           gh release upload "$TAG" --repo "$REPOSITORY" --clobber \
             "_release/$TAG.tar.gz" "_release/$TAG.sha256"
+
+      - name: Prepare portable site for IPFS
+        env:
+          TAG: ${{ steps.edition.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir _ipfs
+          tar -xzf "_release/$TAG.tar.gz" -C _ipfs
+
+      - name: Create IPFS CAR
+        id: ipfs
+        uses: ipfs/ipfs-deploy-action@bb46d65c97660ef08ecaf93e9c187afcee668185 # v3.0.0
+        with:
+          path-to-deploy: _ipfs
+          github-token: ${{ github.token }}
+          kubo-version: v0.43.1
+          cid-profile: unixfs-v1-2025
+          upload-car-artifact: 'false'
+
+      - name: Attach IPFS artifacts to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ steps.edition.outputs.tag }}
+          CID: ${{ steps.ipfs.outputs.cid }}
+          CAR_PATH: ${{ steps.ipfs.outputs.car-path }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$CID" > "_release/$TAG.cid"
+          cp "$CAR_PATH" "_release/$TAG.car"
+          gh release upload "$TAG" --repo "$REPOSITORY" --clobber \
+            "_release/$TAG.cid" "_release/$TAG.car"
+
+      - name: Pin IPFS CAR to Pinata
+        env:
+          PINATA_JWT_TOKEN: ${{ secrets.PINATA_JWT_TOKEN }}
+          TAG: ${{ steps.edition.outputs.tag }}
+          CID: ${{ steps.ipfs.outputs.cid }}
+          CAR_PATH: ${{ steps.ipfs.outputs.car-path }}
+        run: |
+          set -euo pipefail
+          response=$(curl --fail-with-body --silent --show-error \
+            https://uploads.pinata.cloud/v3/files \
+            -H "Authorization: Bearer $PINATA_JWT_TOKEN" \
+            -F network=public \
+            -F "file=@$CAR_PATH" \
+            -F "name=$GITHUB_REPOSITORY-$TAG" \
+            -F car=true)
+          returned_cid=$(jq -er '.data.cid | select(type == "string" and length > 0)' <<< "$response")
+          [[ "$returned_cid" == "$CID" ]] || {
+            echo "::error::Pinata returned CID $returned_cid, expected $CID"
+            exit 1
+          }
+          echo "Pinata confirmed CID $CID"
