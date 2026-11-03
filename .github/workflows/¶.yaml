@@ -164,24 +164,24 @@ jobs:
           gh release upload "$TAG" --repo "$REPOSITORY" --clobber \
             "_release/$TAG.cid" "_release/$TAG.car"
 
-      - name: Pin IPFS CAR to Pinata
+      - name: Pin IPFS CAR to Filebase
         env:
-          PINATA_JWT_TOKEN: ${{ secrets.PINATA_JWT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.FILEBASE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.FILEBASE_SECRET_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          FILEBASE_BUCKET: ${{ vars.FILEBASE_BUCKET }}
           TAG: ${{ steps.edition.outputs.tag }}
           CID: ${{ steps.ipfs.outputs.cid }}
           CAR_PATH: ${{ steps.ipfs.outputs.car-path }}
         run: |
           set -euo pipefail
-          response=$(curl --fail-with-body --silent --show-error \
-            https://uploads.pinata.cloud/v3/files \
-            -H "Authorization: Bearer $PINATA_JWT_TOKEN" \
-            -F network=public \
-            -F "file=@$CAR_PATH" \
-            -F "name=$GITHUB_REPOSITORY-$TAG" \
-            -F car=true)
-          returned_cid=$(jq -er '.data.cid | select(type == "string" and length > 0)' <<< "$response")
+          key="$TAG-$CID.car"
+          aws --endpoint-url https://s3.filebase.com s3 cp \
+            "$CAR_PATH" "s3://$FILEBASE_BUCKET/$key" --metadata 'import=car'
+          returned_cid=$(aws --endpoint-url https://s3.filebase.com s3api head-object \
+            --bucket "$FILEBASE_BUCKET" --key "$key" --query Metadata.cid --output text)
           [[ "$returned_cid" == "$CID" ]] || {
-            echo "::error::Pinata returned CID $returned_cid, expected $CID"
+            echo "::error::Filebase returned CID $returned_cid, expected $CID"
             exit 1
           }
-          echo "Pinata confirmed CID $CID"
+          echo "Filebase confirmed CID $CID"
