@@ -178,10 +178,35 @@ jobs:
           key="$TAG-$CID.car"
           aws --endpoint-url https://s3.filebase.com s3 cp \
             "$CAR_PATH" "s3://$FILEBASE_BUCKET/$key" --metadata 'import=car'
-          returned_cid=$(aws --endpoint-url https://s3.filebase.com s3api head-object \
-            --bucket "$FILEBASE_BUCKET" --key "$key" --query Metadata.cid --output text)
-          [[ "$returned_cid" == "$CID" ]] || {
-            echo "::error::Filebase returned CID $returned_cid, expected $CID"
-            exit 1
-          }
-          echo "Filebase confirmed CID $CID"
+          for attempt in {1..12}; do
+            metadata=$(aws --endpoint-url https://s3.filebase.com s3api head-object \
+              --bucket "$FILEBASE_BUCKET" --key "$key" --query Metadata --output json)
+            returned_cid=$(jq -r '.cid // empty' <<< "$metadata")
+            status=$(jq -r '."pinning-status" // empty' <<< "$metadata")
+            [[ -z "$returned_cid" || "$returned_cid" == "$CID" ]] || {
+              echo "::error::Filebase returned CID $returned_cid, expected $CID"
+              exit 1
+            }
+            if [[ "$returned_cid" == "$CID" && "$status" == pinned ]]; then
+              echo "Filebase confirmed CID $CID is pinned"
+              exit 0
+            fi
+            if (( attempt < 12 )); then sleep 5; fi
+          done
+          echo "::error::Filebase did not confirm CID $CID as pinned"
+          exit 1
+
+      - name: Update IPNS name
+        env:
+          FILEBASE_ACCESS_KEY: ${{ secrets.FILEBASE_ACCESS_KEY }}
+          FILEBASE_SECRET_KEY: ${{ secrets.FILEBASE_SECRET_KEY }}
+          CID: ${{ steps.ipfs.outputs.cid }}
+        run: |
+          set -euo pipefail
+          token=$(printf '%s:%s' "$FILEBASE_ACCESS_KEY" "$FILEBASE_SECRET_KEY" | base64 -w 0)
+          echo "::add-mask::$token"
+          curl --fail-with-body --silent --show-error --request PUT \
+            -H "Authorization: Bearer $token" \
+            -H 'Content-Type: application/json' \
+            --data "$(jq -n --arg cid "$CID" '{cid: $cid}')" \
+            https://api.filebase.io/v1/names/egoless-agency
