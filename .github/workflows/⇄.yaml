@@ -1,0 +1,55 @@
+name: ⇄
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ['¶']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeberg-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.CODEBERG_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Synchronize
+        env:
+          REPOSITORY: ${{ vars.CODEBERG_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          git remote add codeberg "git@codeberg.org:$REPOSITORY.git"
+          git push codeberg HEAD:refs/heads/main
+          while IFS= read -r tag; do
+            if [[ "$tag" =~ ^edition-[1-9][0-9]*$ ]]; then
+              git push codeberg "refs/tags/$tag:refs/tags/$tag"
+            fi
+          done < <(git tag -l 'edition-*')
