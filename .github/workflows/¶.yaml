@@ -93,6 +93,20 @@ jobs:
           roman=$(python3 .github/scripts/edition.py "$NUMBER" _site/index.html)
           echo "roman=$roman" >> "$GITHUB_OUTPUT"
 
+      - name: Package portable edition
+        env:
+          TAG: ${{ steps.edition.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p _release
+          tar --directory=_site --exclude=./CNAME --sort=name --mtime='@0' \
+            --owner=0 --group=0 --numeric-owner -cf - . |
+            gzip -n > "_release/$TAG.tar.gz"
+          (
+            cd _release
+            sha256sum "$TAG.tar.gz" > "$TAG.sha256"
+          )
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
@@ -115,3 +129,5 @@ jobs:
           if (( existing == 0 )); then
             gh release create "$TAG" --repo "$REPOSITORY" --verify-tag --title "edition $ROMAN" --notes "edition $ROMAN"
           fi
+          gh release upload "$TAG" --repo "$REPOSITORY" --clobber \
+            "_release/$TAG.tar.gz" "_release/$TAG.sha256"
