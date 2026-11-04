@@ -6,6 +6,8 @@
     <a href="https://ipfs.filebase.io/ipns/k51qzi5uqu5djvlb1dkhydc0q0fn3ge3967jexv008btlgtjs28jzatorutxao/"><img src="https://img.shields.io/badge/IPFS-latest-65c2cb?style=flat-square&amp;logo=ipfs&amp;logoColor=white" alt="Latest edition on IPFS"></a>
     &nbsp;&nbsp;
     <a href="https://codeberg.org/ccamel/egoless-agency"><img src="https://img.shields.io/badge/Codeberg-mirror-83f7b4?style=flat-square&amp;logo=codeberg&amp;logoColor=white" alt="Codeberg mirror"></a>
+    &nbsp;&nbsp;
+    <a href="https://radicle.network/nodes/iris.radicle.network/rad:z2YacWH6nB1WqxSanSE3ZAh8ykbsV"><img src="https://img.shields.io/badge/Radicle-mirror-b43b26?style=flat-square" alt="Radicle mirror"></a>
 </p>
 
 <p>
