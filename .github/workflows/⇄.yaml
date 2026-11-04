@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  mirror:
+  codeberg:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out main
@@ -50,3 +50,64 @@ jobs:
               git push codeberg "refs/tags/$tag:refs/tags/$tag"
             fi
           done < <(git tag -l 'edition-*')
+
+  radicle:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Radicle
+        run: |
+          set -euo pipefail
+          archive=radicle-x86_64-unknown-linux-musl.tar.xz
+          url="https://files.radicle.dev/releases/1.10.3/$archive"
+          curl --fail --silent --show-error --location "$url" --output "$archive"
+          curl --fail --silent --show-error --location "$url.sig" --output "$archive.sig"
+          printf '%s\n' 'radicle ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFhK7CqgIIbSthoNn8ea32krOnMzC807Z+PpBkR2YOVj' > signers
+          ssh-keygen -Y verify -f signers -I radicle -n file -s "$archive.sig" < "$archive"
+          mkdir -p "$RUNNER_TEMP/radicle"
+          tar -xJf "$archive" --strip-components=1 -C "$RUNNER_TEMP/radicle"
+          echo "$RUNNER_TEMP/radicle/bin" >> "$GITHUB_PATH"
+
+      - name: Restore CI identity
+        env:
+          RADICLE_KEY: ${{ secrets.RADICLE_KEY }}
+          RADICLE_PUBLIC_KEY: ${{ secrets.RADICLE_PUBLIC_KEY }}
+          RAD_PASSPHRASE: ${{ secrets.RADICLE_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$RADICLE_KEY" && test -n "$RADICLE_PUBLIC_KEY" && test -n "$RAD_PASSPHRASE"
+          install -m 700 -d ~/.radicle/keys
+          printf '%s\n' "$RADICLE_KEY" > ~/.radicle/keys/radicle
+          chmod 600 ~/.radicle/keys/radicle
+          printf '%s\n' "$RADICLE_PUBLIC_KEY" > ~/.radicle/keys/radicle.pub
+          rad config init --alias egoless-bot
+          rad self --did
+
+      - name: Synchronize
+        env:
+          RAD_PASSPHRASE: ${{ secrets.RADICLE_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          rid=rad:z2YacWH6nB1WqxSanSE3ZAh8ykbsV
+          rad node start
+          rad node connect z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7@iris.radicle.network:8776 --timeout 2min
+          rad node connect z6Mkmqogy2qEM2ummccUthFEaaHvyYmYBYh3dbe9W4ebScxo@rosa.radicle.network:8776 --timeout 2min
+          rad clone "$rid" "$RUNNER_TEMP/radicle-clone" --scope all --timeout 2min \
+            --seed z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7 \
+            --seed z6Mkmqogy2qEM2ummccUthFEaaHvyYmYBYh3dbe9W4ebScxo
+          did=$(rad self --did)
+          rad inspect --identity "$rid" | jq -e --arg did "$did" '.delegates | index($did) != null' > /dev/null
+          git remote add rad "rad://${rid#rad:}/${did##*:}"
+          git push rad HEAD:refs/heads/main
+          while IFS= read -r tag; do
+            if [[ "$tag" =~ ^edition-[1-9][0-9]*$ ]]; then
+              git push rad "refs/tags/$tag:refs/tags/$tag"
+            fi
+          done < <(git tag -l 'edition-*')
+          rad sync "$rid" --announce --replicas 2 --timeout 2min
