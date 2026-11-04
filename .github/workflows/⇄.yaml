@@ -44,7 +44,8 @@ jobs:
         run: |
           set -euo pipefail
           git remote add codeberg "git@codeberg.org:$REPOSITORY.git"
-          git push codeberg HEAD:refs/heads/main
+          current=$(git ls-remote codeberg refs/heads/main | cut -f1)
+          git push --force-with-lease="refs/heads/main:$current" codeberg HEAD:refs/heads/main
           while IFS= read -r tag; do
             if [[ "$tag" =~ ^edition-[1-9][0-9]*$ ]]; then
               git push codeberg "refs/tags/$tag:refs/tags/$tag"
