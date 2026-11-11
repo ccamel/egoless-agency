@@ -98,3 +98,30 @@ h2 { font-size: clamp(2.8rem, 6vw, 6.5rem); line-height: 0.94; text-transform: u
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+@page { margin: 20mm; }
+
+@media print {
+  :root, .footer { background: #fff; color: #111; }
+  .wrap { width: 100%; }
+  .masthead { min-height: 0; padding-bottom: 0.5rem; }
+  .masthead nav, .down-link { display: none; }
+  .hero { padding: 1rem 0; }
+  .hero-bottom, .section-grid, .principles-heading, .principle-list li { display: block; }
+  .hero-bottom, .section-grid, .principles-heading { border-top-width: 1px; }
+  .hero-bottom { padding-top: 0.5rem; }
+  .section-grid, .principles-heading, .principle-list li { padding: 1rem 0; }
+  .principle-list li { border-top-width: 1px; break-inside: avoid; }
+  h1, .footer-statement { font-size: 28pt; line-height: 1; }
+  h2 { font-size: 20pt; line-height: 1.1; }
+  h3 { font-size: 14pt; line-height: 1.2; }
+  .principles-heading, .section-label { break-inside: avoid; break-after: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+  .hero-subtitle, .emphasis { font-size: 14pt; }
+  .number { display: block; font-size: 14pt; line-height: 1.2; }
+  .prose { max-width: none; font-size: 10pt; }
+  .prose p { margin-bottom: 0.7em; }
+  .intro-content h2, .principles-heading h2, .principles-heading > p,
+  .principle-content h3, .footer .eyebrow, .footer-statement { margin-bottom: 0.5rem; }
+  .footer { padding: 1rem 0; break-inside: avoid; }
+}
