@@ -178,7 +178,7 @@ jobs:
           key="$TAG-$CID.car"
           aws --endpoint-url https://s3.filebase.com s3 cp \
             "$CAR_PATH" "s3://$FILEBASE_BUCKET/$key" --metadata 'import=car'
-          for attempt in {1..12}; do
+          for attempt in {1..60}; do
             metadata=$(aws --endpoint-url https://s3.filebase.com s3api head-object \
               --bucket "$FILEBASE_BUCKET" --key "$key" --query Metadata --output json)
             returned_cid=$(jq -r '.cid // empty' <<< "$metadata")
@@ -190,9 +190,9 @@ jobs:
               echo "Filebase confirmed CID $CID"
               exit 0
             fi
-            if (( attempt < 12 )); then sleep 5; fi
+            if (( attempt < 60 )); then sleep 5; fi
           done
-          echo "::error::Filebase did not confirm CID $CID as pinned"
+          echo "::error::Filebase did not confirm CID $CID"
           exit 1
 
       - name: Update IPNS name
