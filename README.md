@@ -23,5 +23,5 @@
     >
 </p>
 <p>
-    <sub>The manifesto and site are dedicated to the public domain under <a href="LICENSE">CC0 1.0 Universal</a>.</sub>
+    <sub>The manifesto and site are dedicated to the public domain under <a href="LICENSE">CC0 1.0 Universal</a>. The self-hosted Archivo font is licensed separately under the <a href="fonts/OFL.txt">SIL Open Font License 1.1</a>.</sub>
 </p>

@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Archivo";
+  src: url("fonts/archivo-bold-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
   font-family: Arial, Helvetica, sans-serif;
@@ -21,7 +29,10 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
   gap: 2rem;
   border-bottom: 2px solid;
 }
-.wordmark { font-size: 1rem; font-weight: 900; letter-spacing: -0.06em; text-decoration: none; }
+.wordmark, h1, h2, h3, .footer-statement, .hero-subtitle, .emphasis, .number {
+  font-family: "Archivo", Arial, Helvetica, sans-serif;
+}
+.wordmark { font-size: 1rem; font-weight: 700; letter-spacing: -0.06em; text-decoration: none; }
 .masthead nav { display: flex; gap: clamp(1.5rem, 4vw, 5rem); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 .masthead nav a { text-decoration: none; }
 .masthead nav a span { display: inline-block; line-height: 0; }
@@ -32,11 +43,11 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
 .hero-meta { display: flex; justify-content: space-between; gap: 1rem; }
 .edition { text-transform: none; }
 h1, h2, h3, p { margin-top: 0; }
-h1, h2, h3, .footer-statement { font-weight: 900; letter-spacing: -0.065em; font-kerning: normal; text-wrap: balance; }
+h1, h2, h3, .footer-statement { font-weight: 700; letter-spacing: -0.035em; font-kerning: normal; text-wrap: balance; }
 h1 { margin: 0.65em 0 0.35em; font-size: clamp(3rem, 9vw, 10rem); line-height: 0.86; text-transform: uppercase; }
-.period { letter-spacing: 0; }
+.period { color: #b63825; letter-spacing: 0; }
 .hero-bottom { display: grid; grid-template-columns: 1fr 1fr auto; gap: 2rem; align-items: end; border-top: 8px solid; padding-top: 1.5rem; }
-.hero-subtitle { margin: 0; font-size: clamp(1.5rem, 3vw, 3rem); font-weight: 900; letter-spacing: -0.05em; line-height: 1; text-transform: uppercase; }
+.hero-subtitle { margin: 0; font-size: clamp(1.5rem, 3vw, 3rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1; text-transform: uppercase; }
 .hero-statement { margin: 0; font-size: clamp(1rem, 1.4vw, 1.3rem); line-height: 1.3; }
 .down-link { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
 .down-link span { font-size: 1.2rem; margin-left: 0.5rem; }
@@ -49,14 +60,15 @@ h2 { font-size: clamp(2.8rem, 6vw, 6.5rem); line-height: 0.94; text-transform: u
 .prose { max-width: 43rem; font-size: clamp(1.05rem, 1.35vw, 1.3rem); line-height: 1.5; font-kerning: normal; font-variant-ligatures: common-ligatures; text-wrap: pretty; hanging-punctuation: first; }
 .prose p { margin-bottom: 1.2em; }
 .prose p:last-child { margin-bottom: 0; }
-.emphasis { font-size: clamp(1.5rem, 2.5vw, 2.5rem); font-weight: 900; letter-spacing: -0.04em; line-height: 1.1; }
+.emphasis { font-size: clamp(1.5rem, 2.5vw, 2.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.emphasis strong { font-weight: inherit; }
 
 .principles-heading { display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; border-top: 8px solid; padding-top: 2rem; }
 .principles-heading h2 { margin-bottom: 2rem; }
 .principles-heading > p { grid-column: 2; margin: 0 0 4rem; font-size: 0.85rem; font-weight: 700; line-height: 1.4; text-transform: uppercase; }
 .principle-list { list-style: none; margin: 0; padding: 0; }
 .principle-list li { display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; border-top: 2px solid; padding: 2rem 0 clamp(5rem, 9vw, 9rem); }
-.number { font-size: clamp(5rem, 12vw, 12rem); font-weight: 900; letter-spacing: -0.09em; line-height: 0.8; }
+.number { font-size: clamp(5rem, 12vw, 12rem); font-weight: 700; letter-spacing: -0.04em; line-height: 0.8; }
 .principle-content h3 { max-width: 55rem; margin-bottom: clamp(2rem, 4vw, 4rem); font-size: clamp(2rem, 4.2vw, 4.5rem); line-height: 1; }
 .conclusion { margin-top: 2rem; }
 
@@ -72,7 +84,8 @@ h2 { font-size: clamp(2.8rem, 6vw, 6.5rem); line-height: 0.94; text-transform: u
   .masthead { min-height: 70px; }
   .masthead nav { gap: 1rem; font-size: 0.65rem; }
   .hero-meta { font-size: 0.6rem; }
-  h1 { font-size: clamp(2.6rem, 9vw, 10rem); overflow-wrap: anywhere; }
+  h1 { font-size: clamp(1.5rem, 8.5vw, 3.5rem); overflow-wrap: anywhere; }
+  h2 { font-size: clamp(1.5rem, 8vw, 2.8rem); }
   .hero-bottom { grid-template-columns: 1fr 1fr; }
   .down-link { grid-column: 1 / -1; }
   .section-grid, .principles-heading { grid-template-columns: 1fr; gap: 2.5rem; }

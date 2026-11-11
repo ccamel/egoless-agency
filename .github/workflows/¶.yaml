@@ -90,6 +90,7 @@ jobs:
           set -euo pipefail
           mkdir _site
           cp index.html style.css favicon.svg CNAME _site/
+          if [[ -d fonts ]]; then cp -R fonts _site/; fi
           roman=$(python3 .github/scripts/edition.py "$NUMBER" _site/index.html)
           echo "roman=$roman" >> "$GITHUB_OUTPUT"
 
