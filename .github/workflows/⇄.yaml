@@ -96,12 +96,16 @@ jobs:
         run: |
           set -euo pipefail
           rid=rad:z2YacWH6nB1WqxSanSE3ZAh8ykbsV
-          rad node start
-          rad node connect z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7@iris.radicle.network:8776 --timeout 2min
-          rad node connect z6Mkmqogy2qEM2ummccUthFEaaHvyYmYBYh3dbe9W4ebScxo@rosa.radicle.network:8776 --timeout 2min
-          rad clone "$rid" "$RUNNER_TEMP/radicle-clone" --scope all --timeout 2min \
-            --seed z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7 \
-            --seed z6Mkmqogy2qEM2ummccUthFEaaHvyYmYBYh3dbe9W4ebScxo
+          for attempt in 1 2 3; do
+            rad node start
+            rad node connect z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7@iris.radicle.network:8776 --timeout 2min
+            rad node connect z6Mkmqogy2qEM2ummccUthFEaaHvyYmYBYh3dbe9W4ebScxo@rosa.radicle.network:8776 --timeout 2min
+            if rad clone "$rid" "$RUNNER_TEMP/radicle-clone" --scope all --timeout 2min; then
+              break
+            fi
+            [[ "$attempt" == 3 ]] && exit 1
+            sleep 10
+          done
           did=$(rad self --did)
           rad inspect --identity "$rid" | jq -e --arg did "$did" '.delegates | index($did) != null' > /dev/null
           git remote add rad "rad://${rid#rad:}/${did##*:}"
