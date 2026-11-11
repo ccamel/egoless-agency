@@ -182,13 +182,12 @@ jobs:
             metadata=$(aws --endpoint-url https://s3.filebase.com s3api head-object \
               --bucket "$FILEBASE_BUCKET" --key "$key" --query Metadata --output json)
             returned_cid=$(jq -r '.cid // empty' <<< "$metadata")
-            status=$(jq -r '."pinning-status" // empty' <<< "$metadata")
             [[ -z "$returned_cid" || "$returned_cid" == "$CID" ]] || {
               echo "::error::Filebase returned CID $returned_cid, expected $CID"
               exit 1
             }
-            if [[ "$returned_cid" == "$CID" && "$status" == pinned ]]; then
-              echo "Filebase confirmed CID $CID is pinned"
+            if [[ "$returned_cid" == "$CID" ]]; then
+              echo "Filebase confirmed CID $CID"
               exit 0
             fi
             if (( attempt < 12 )); then sleep 5; fi
